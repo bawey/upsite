@@ -8,7 +8,7 @@ import smtplib
 import datetime
 
 class Settings:
-    url = None
+    url = 'http://cms.cern.ch/iCMS'
     report_as = None
     report_to = None
     cc_to = []
@@ -27,6 +27,7 @@ def main():
 
     try:
         settings.verbose = '-v' in args or '--verbose' in args or '--v' in args
+        settings.use_tls = '--use_tls' in args
 
         if '--help' in args or '-h' in args:
             print_help()
@@ -34,8 +35,6 @@ def main():
 
         if '--url' in args:
             settings.url = args[args.index('--url')+1]
-        else:
-            settings.url = 'http://cms.cern.ch/iCMS'
 
         print 'Checking availability of %s' % settings.url
 
@@ -46,10 +45,19 @@ def main():
             settings.report_to = args[args.index('--report-to')+1].split()
             settings.report_as = args[args.index('--report-as')+1]
             settings.smtp_server = args[args.index('--smtp-server')+1]
-            settings.password = getpass.getpass()
-            if '--use_tls' in args:
-                settings.use_tls = True
+            if '--password' in args:
+                settings.password = args[args.index('--password')+1]
+            elif '--pass' in args:
+                settings.password = args[args.index('--pass')+1]
+            elif '-p' in args:
+                settings.password = args[args.index('-p')+1]
+            else:
+                settings.password = getpass.getpass()
+
             send_mail('Monitoring started', 'Started monitoring on %s\n' % settings.url, settings)
+        else:
+            settings.verbose = True
+
     except:
         print_help()
         return
@@ -106,7 +114,7 @@ def print_help():
 Upsite - tool periodically checking and reporting a website's availability.
 Usage:
 
-upsite [--verbose | -v ] [--url ...] [--sleep ...] [--report-to ...] [--report-as ...] [--smtp_server ...]
+upsite [--verbose | -v ] [--url ...] [--sleep ...] [--report-to ...] [--report-as ...] [--smtp_server ...] [--password | --pass | -p ]
 
 Options:
     --verbose | -v              : prints every response it receives
@@ -116,9 +124,10 @@ Options:
                                     --report-to,
                                     --report-as,
                                     --smtp-server
-                                    and asks for password.
+                                    --password | --pass | -p (or asks for password if not given).
     --reort-as address          : e-mail address to send messages from
     --smtp-server address:port  : SMTP server address of the --report-as e-mail account
+    --password | --pass | -p    : Password needed to send emails.
     --use_tls                   : Enables TLS when connecting to the e-mail server.
     --help                      : Prints this message and exits.
 """
